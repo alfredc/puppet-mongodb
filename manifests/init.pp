@@ -4,7 +4,8 @@
 #
 # Notes:
 #  This class is Ubuntu specific.
-#  By Sean Porter, Gastown Labs Inc.
+#  Requires apt module
+#  By Sean Porter, Gastown Labs Inc., modified by Alfred Chan
 #
 # Actions:
 #  - Install MongoDB using a 10gen Ubuntu repository
@@ -15,42 +16,26 @@
 #  include mongodb
 #
 class mongodb {
-	include mongodb::params
 	
-	package { "python-software-properties":
+  apt::source { "mongodb":
+    location => "http://downloads-distro.mongodb.org/repo/ubuntu-upstart",
+    release => "dist",
+    repos => "10gen",
+    key => "7F0CEB10",
+    key_server => "keyserver.ubuntu.com",
+  }
+	
+	package { "mongodb-10gen":
 		ensure => installed,
-	}
-	
-	exec { "10gen-apt-repo":
-		path => "/bin:/usr/bin",
-		command => "add-apt-repository '${mongodb::params::repository}'",
-		unless => "cat /etc/apt/sources.list | grep 10gen",
-		require => Package["python-software-properties"],
-	}
-	
-	exec { "10gen-apt-key":
-		path => "/bin:/usr/bin",
-		command => "apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10",
-		unless => "apt-key list | grep 10gen",
-		require => Exec["10gen-apt-repo"],
-	}
-	
-	exec { "update-apt":
-		path => "/bin:/usr/bin",
-		command => "apt-get update",
-		unless => "ls /usr/bin | grep mongo",
-		require => Exec["10gen-apt-key"],
-	}
-
-	package { "mongodb-stable":
-		ensure => installed,
-		require => Exec["update-apt"],
+		require => Apt::Source["mongodb"],
 	}
 	
 	service { "mongodb":
 		enable => true,
 		ensure => running,
-		require => Package["mongodb-stable"],
+    hasstatus  => true,
+    hasrestart => true,
+		require => Package["mongodb-10gen"],
 	}
 	
 	define replica_set {
@@ -58,7 +43,7 @@ class mongodb {
 			content => template("mongodb/mongodb.conf.erb"),
 			mode => "0644",
 			notify => Service["mongodb"],
-			require => Package["mongodb-stable"],
+			require => Package["mongodb-10gen"],
 		}
 	}
 }
