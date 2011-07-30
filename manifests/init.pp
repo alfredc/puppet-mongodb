@@ -27,6 +27,13 @@ class mongodb {
     include_src => false,
   }
 
+  file { "/data":
+    ensure => directory,
+    owner => "root",
+    group => "root",
+    mode => 644,
+  }
+
   file { "/data/db":
     ensure => directory,
     owner => "root",
