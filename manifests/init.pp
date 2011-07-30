@@ -11,12 +11,13 @@
 #  - Install MongoDB using a 10gen Ubuntu repository
 #  - Manage the MongoDB service
 #  - MongoDB can be part of a replica set
+#  - ensure /data/db folder exists
 #
 # Sample Usage:
 #  include mongodb
 #
 class mongodb {
-	
+
   apt::source { "mongodb":
     location => "http://downloads-distro.mongodb.org/repo/ubuntu-upstart",
     release => "dist",
@@ -25,12 +26,19 @@ class mongodb {
     key_server => "keyserver.ubuntu.com",
     include_src => false,
   }
-	
+
+  file { "/data/db":
+    ensure => directory,
+    owner => "root",
+    group => "root",
+    mode => 644,
+  }
+
 	package { "mongodb-10gen":
 		ensure => installed,
 		require => Apt::Source["mongodb"],
 	}
-	
+
 	service { "mongodb":
 		enable => true,
 		ensure => running,
@@ -38,7 +46,7 @@ class mongodb {
     hasrestart => true,
 		require => Package["mongodb-10gen"],
 	}
-	
+
 	define replica_set {
 		file { "/etc/init/mongodb.conf":
 			content => template("mongodb/mongodb.conf.erb"),
